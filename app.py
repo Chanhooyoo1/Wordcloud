@@ -5,90 +5,99 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 from konlpy.tag import Okt
 from collections import Counter
-import platform
+import os
 
-# 페이지 설정
-st.set_page_config(page_title="Dynamic Color WordCloud", layout="wide")
+# 1. 페이지 설정
+st.set_page_config(page_title="Multi-Source WordCloud", layout="wide")
 
-# OS별 폰트 설정 (폰트가 없으면 에러가 날 수 있으므로 주의)
-def get_font_path():
-    sys_name = platform.system()
-    if sys_name == "Windows":
-        return "malgun.ttf"
-    elif sys_name == "Darwin": # macOS
-        return "/System/Library/Fonts/Supplemental/AppleGothic.ttf"
-    else: # Linux/Docker 환경 (나눔폰트 설치 가정)
-        return "/usr/share/fonts/truetype/nanum/NanumGothic.ttf"
+# 2. 폰트 경로 설정 (윈도우 기본 맑은 고딕 경로)
+# 만약 Mac 사용자라면 "/System/Library/Fonts/Supplemental/AppleGothic.ttf"로 변경하세요.
+FONT_PATH = "C:/Windows/Fonts/malgun.ttf"
 
-st.title("🌐 웹페이지 빈도 분석 워드클라우드")
-st.info("주소를 입력하면 내용을 분석하여, 빈도가 높으면 **빨간색**, 낮으면 **파란색**으로 표시합니다.")
+st.title("📊 통합 워드클라우드 분석기")
+st.write("웹페이지 주소를 입력하거나, 메모장(.txt) 파일을 업로드하여 단어 빈도를 분석해보세요.")
 
-# 1. URL 입력 및 설정
+# --- 사이드바: 설정 및 파일 업로드 ---
 with st.sidebar:
-    st.header("⚙️ 분석 설정")
-    url = st.text_input("분석할 URL", "https://n.news.naver.com/article/001/0014567890")
+    st.header("🛠 설정 및 업로드")
+    
+    # 분석 모드 선택
+    mode = st.radio("분석 대상을 선택하세요", ["웹페이지 URL", "텍스트 파일 업로드"])
+    
+    if mode == "웹페이지 URL":
+        url = st.text_input("URL 입력", "https://n.news.naver.com/article/001/0014567890")
+    else:
+        uploaded_file = st.file_uploader("텍스트 파일 선택 (.txt)", type=["txt"])
+    
+    st.divider()
     max_words = st.slider("최대 단어 수", 50, 300, 100)
-    # 불용어(제외할 단어) 설정
-    stop_words_input = st.text_area("제외할 단어 (쉼표로 구분)", "기자, 뉴스, 무단, 배포, 금지, 사진, 연합뉴스")
-    stop_words = [word.strip() for word in stop_words_input.split(",")]
+    stop_words_input = st.text_area("제외할 단어 (쉼표 구분)", "기자, 뉴스, 무단, 배포, 금지")
+    stop_words = [w.strip() for w in stop_words_input.split(",")]
 
-# 2. 분석 실행 버튼
-if st.button("웹페이지 데이터 추출 및 시각화"):
+# --- 데이터 처리 함수 ---
+def get_nouns(text):
+    okt = Okt()
+    # 2글자 이상인 명사만 추출 및 불용어 제거
+    nouns = [n for n in okt.nouns(text) if len(n) > 1 and n not in stop_words]
+    return Counter(nouns)
+
+# --- 메인 실행 로직 ---
+text_data = ""
+
+if st.button("🚀 분석 시작"):
     try:
-        with st.spinner('웹페이지를 분석 중입니다...'):
-            # 웹 크롤링 (Timeout 추가)
-            response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
-            response.encoding = 'utf-8' 
-            soup = BeautifulSoup(response.text, 'html.parser')
-
-            # 불필요한 태그 제거
-            for tag in soup(["script", "style", "header", "footer", "nav"]): 
-                tag.extract() 
-
-            text = soup.get_text()
-
-            # 데이터 처리 (명사 추출 및 불용어 제거)
-            okt = Okt()
-            nouns = [n for n in okt.nouns(text) if len(n) > 1 and n not in stop_words]
-            count = Counter(nouns)
-
-        if count:
-            # 3. 워드클라우드 생성
-            wc = WordCloud(
-                font_path=get_font_path(),
-                background_color="white",
-                width=1000,
-                height=600,
-                max_words=max_words,
-                colormap="coolwarm", # 빈도 기반 색상 매핑 (Low: Blue, High: Red)
-                random_state=42
-            ).generate_from_frequencies(count)
-
-            # 4. 시각화 출력
-            col1, col2 = st.columns([2, 1])
-            
-            with col1:
-                st.subheader("📊 워드클라우드 결과")
-                fig, ax = plt.subplots(figsize=(10, 6))
-                ax.imshow(wc, interpolation='bilinear')
-                ax.axis('off')
-                st.pyplot(fig)
-            
-            with col2:
-                st.subheader("🔝 빈도수 Top 10")
-                top_10 = count.most_common(10)
-                for i, (word, freq) in enumerate(top_10):
-                    # 순위에 따른 시각적 차별화
-                    color = "red" if i < 3 else "black"
-                    st.markdown(f"{i+1}. <span style='color:{color}; font-weight:bold'>{word}</span> : {freq}회", unsafe_allow_html=True)
-
-            # 데이터 테이블 추가
-            with st.expander("전체 단어 빈도 보기"):
-                st.write(count)
-
+        # 데이터 수집 단계
+        if mode == "웹페이지 URL":
+            res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
+            res.encoding = 'utf-8'
+            soup = BeautifulSoup(res.text, 'html.parser')
+            for s in soup(["script", "style"]): s.extract()
+            text_data = soup.get_text()
         else:
-            st.warning("분석할 명사가 충분하지 않습니다.")
+            if uploaded_file is not None:
+                # 업로드된 파일 읽기
+                text_data = uploaded_file.read().decode("utf-8")
+            else:
+                st.warning("분석할 파일을 먼저 업로드해주세요.")
+                st.stop()
 
+        # 분석 및 시각화 단계
+        if text_data:
+            with st.spinner("단어 분석 및 시각화 중..."):
+                counts = get_nouns(text_data)
+                
+                if not counts:
+                    st.error("분석할 단어가 충분하지 않습니다.")
+                    st.stop()
+
+                # 워드클라우드 생성
+                wc = WordCloud(
+                    font_path=FONT_PATH,
+                    background_color="white",
+                    width=1200,
+                    height=700,
+                    max_words=max_words,
+                    colormap="coolwarm"
+                ).generate_from_frequencies(counts)
+
+                # 레이아웃 구성
+                col1, col2 = st.columns([3, 1])
+
+                with col1:
+                    st.subheader("🖼 워드클라우드")
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    ax.imshow(wc, interpolation='bilinear')
+                    ax.axis('off')
+                    st.pyplot(fig)
+
+                with col2:
+                    st.subheader("📈 Top 10 빈도")
+                    top_10 = counts.most_common(10)
+                    for i, (word, freq) in enumerate(top_10):
+                        st.write(f"**{i+1}. {word}** ({freq}회)")
+
+    except OSError:
+        st.error(f"폰트 파일을 찾을 수 없습니다: {FONT_PATH}")
+        st.info("윈도우 사용자라면 경로가 맞는지 확인하시고, Mac/Linux라면 해당 OS의 폰트 경로로 수정해야 합니다.")
     except Exception as e:
-        st.error(f"오류가 발생했습니다: {e}")
-        st.info("Tip: URL이 유효한지, 혹은 해당 사이트가 크롤링을 차단하고 있지 않은지 확인해 보세요.")
+        st.error(f"오류 발생: {e}")
