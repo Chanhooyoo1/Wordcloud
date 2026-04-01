@@ -12,7 +12,7 @@ st.set_page_config(page_title="Multi-Source WordCloud", layout="wide")
 
 # 2. 폰트 경로 설정 (윈도우 기본 맑은 고딕 경로)
 # 만약 Mac 사용자라면 "/System/Library/Fonts/Supplemental/AppleGothic.ttf"로 변경하세요.
-FONT_PATH = "C:/Windows/Fonts/malgun.ttf"
+FONT_PATH = "C:/Windows/Fonts/맑은 고딕.ttf"
 
 st.title("📊 통합 워드클라우드 분석기")
 st.write("웹페이지 주소를 입력하거나, 메모장(.txt) 파일을 업로드하여 단어 빈도를 분석해보세요.")
