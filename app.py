@@ -37,27 +37,34 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def create_mask(shape_type):
-    # 1. 처음부터 255(흰색 배경)로 꽉 채운 캔버스를 만듭니다.
+    # 1. 캔버스 생성 (회색조 L 모드, 흰색 배경 255)
     mask = Image.new("L", (1000, 1000), 255)
     draw = ImageDraw.Draw(mask)
     
-    # 2. 0(검은색)으로 모양을 그립니다. (여기에만 글자가 들어감)
+    # 2. 0(검은색)으로 모양 그리기
     if shape_type == "하트모양":
-        draw.ellipse([150, 150, 550, 550], fill=0)
-        draw.ellipse([450, 150, 850, 550], fill=0)
-        draw.polygon([(158, 380), (500, 900), (842, 380)], fill=0)
+        # 왼쪽 타원 (더 크고 넓게)
+        draw.ellipse([100, 150, 650, 650], fill=0)
+        # 오른쪽 타원 (더 크고 넓게)
+        draw.ellipse([350, 150, 900, 650], fill=0)
+        # 아래쪽 삼각형 (좌표를 옆면 타원과 자연스럽게 연결)
+        draw.polygon([(115, 450), (500, 950), (885, 450)], fill=0)
+        # 원과 삼각형 사이의 'V'자 틈새를 메워주는 사각형
+        draw.rectangle([300, 400, 700, 650], fill=0)
+
     elif shape_type == "구름모양":
         draw.ellipse([100, 400, 450, 750], fill=0)
         draw.ellipse([300, 250, 750, 700], fill=0)
         draw.ellipse([600, 400, 950, 750], fill=0)
         draw.rectangle([250, 500, 750, 750], fill=0)
+
     elif shape_type == "동그라미":
         draw.ellipse([50, 50, 950, 950], fill=0)
     else:
         return None
 
+    # 3. 넘파이 배열 변환 및 이진화 처리
     mask_array = np.array(mask)
-    # [핵심] 128보다 크면 무조건 255(배경), 작으면 무조건 0(글자칸)
     mask_array = np.where(mask_array > 128, 255, 0).astype(np.uint8)
     return mask_array
 
