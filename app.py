@@ -166,20 +166,23 @@ if st.button("워드클라우드 생성하기!"):
                 counts = Counter(nouns)
 
                 # 4. 워드클라우드 생성 (여백 최소화 설정)
+# 워드클라우드 생성 부분 코드를 아래 설정으로 교체하세요.
                 wc = WordCloud(
                     font_path=font_path,
-                    background_color="#1a1c23", # 어두운 배경 (파란 글씨가 잘 보임)
-                    width=mask_arr.shape[1] if mask_arr is not None else 1000,
-                    height=mask_arr.shape[0] if mask_arr is not None else 1000,
-                    max_words=max_words,
-                    mask=mask_arr,
+                    background_color="#1a1c23", # 어두운 배경
+                    mask=mask_arr,               # 위에서 만든 mask_arr가 반드시 들어가야 함
                     color_func=rainbow_color_func,
-                    margin=0,               # 여백 0
-                    prefer_horizontal=0.9,   # 가로 위주
-                    relative_scaling=0.5,    # 빈틈 채우기 최적화
-                    min_font_size=5,         # 작은 글자로 빈틈 메우기
-                    repeat=True,             # 모양을 꽉 채우기 위해 단어 반복
-                    contour_width=0
+                    
+                    # --- 모양을 살리는 핵심 설정 ---
+                    repeat=True,              # 중요: 단어가 부족해도 계속 반복해서 모양을 채움
+                    relative_scaling=0.1,     # 중요: 단어 크기 차이를 줄여서 빈틈을 빽빽하게 채움
+                    min_font_size=2,          # 중요: 아주 작은 단어까지 동원해서 외곽선을 살림
+                    max_words=2000,           # 단어 개수를 확 늘려서 밀도를 높임
+                    # ----------------------------
+                    
+                    margin=0,
+                    width=mask_arr.shape[1],
+                    height=mask_arr.shape[0]
                 ).generate_from_frequencies(counts)
 
                 # 5. 결과 출력
