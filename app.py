@@ -111,23 +111,29 @@ with st.sidebar:
     max_words = st.slider("생성할 단어 수", 50, 500, 250)
 # 5. 분석 엔진 가동
 if st.button("워드클라우드 생성하기!"):
-    font_path = ""
+    # 1. 폰트 경로를 여기에 정확히 입력하세요!
+    font_path = "NanumGothicExtraBold.ttf" 
+    
+    # 폰트 파일이 실제 폴더에 있는지 체크
     if not os.path.exists(font_path):
-        st.error("삐뽀삐뽀삐뽀비상초비상글꼴파일이없대요찬후한테빨리말을하던지전화를하던이하세요물의를끼쳐드려죄송합니다내일바로도게자박겟습니다내일보면말끔히고쳐져있을거예요죄송합니다")
+        st.error("삐뽀삐뽀🚨 글꼴 파일('NanumGothicExtraBold.ttf')이 폴더에 없어요! 파일을 업로드해 주세요.")
     else:
         try:
-            content = "NanumGothicExtraBold.ttf"
-            mask_arr = None  # 마스크 변수 초기화 (에러 방지)
+            # 2. content는 처음에 비워두어야 크롤링/파일 결과가 정상적으로 담깁니다.
+            content = "" 
+            mask_arr = None  # 마스크 변수 초기화
 
             with st.spinner("생성 중이예요..."):
-                # 1. 데이터 가져오기 로직
+                # --- 데이터 가져오기 로직 ---
                 if source_type == "웹사이트로 생성하기" and url:
                     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
                     res = requests.get(url, headers=headers, timeout=15)
                     res.encoding = res.apparent_encoding
                     soup = BeautifulSoup(res.text, 'html.parser')
+                    
                     for junk in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'iframe']):
                         junk.decompose()
+                        
                     potential_bodies = soup.find_all(['article', 'div', 'main', 'section'])
                     content = max([pb.get_text(separator=' ', strip=True) for pb in potential_bodies], key=len) if potential_bodies else soup.get_text()
                 
@@ -139,28 +145,13 @@ if st.button("워드클라우드 생성하기!"):
                             break
                         except: continue
 
+                # 데이터가 잘 가져와졌는지 체크
                 if not content or len(content.strip()) < 10:
-                    st.warning("분석할 단어가 부족해요.")
+                    st.warning("분석할 단어가 부족해요. 주소나 파일을 다시 확인해주세요.")
                     st.stop()
 
-                # 2. 모양(마스크) 결정 로직
-                if shape_option == "직접 글자 입력":
-                    # 글자 수에 맞춰 캔버스 너비 조절
-                    width = 400 + (len(user_shape) * 200)
-                    mask_img = Image.new("RGB", (width, 600), (255, 255, 255))
-                    draw = ImageDraw.Draw(mask_img)
-                    font = ImageFont.truetype(font_path, 400)
-                    w, h = draw.textbbox((0, 0), user_shape, font=font)[2:]
-                    draw.text(((width-w)/2, (600-h)/2), user_shape, fill=(0, 0, 0), font=font)
-                    mask_arr = np.array(mask_img)
-                
-                elif shape_option == "이미지 파일 업로드" and mask_file:
-                    mask_img = Image.open(mask_file).convert('L')
-                    mask_arr = np.array(mask_img)
-                    mask_arr = np.where(mask_arr > 128, 255, 0).astype(np.uint8)
-                
-                elif shape_option == "기본 도형":
-                    mask_arr = create_mask(selected_shape)
+                # --- 3. 여기서부터 마스크 생성 및 워드클라우드 로직 시작 ---
+                # (이전에 드린 shape_option 관련 마스크 생성 코드를 이어서 붙이시면 됩니다!)
 
                 # 3. 단어 분석
                 okt = Okt()
