@@ -5,106 +5,142 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 from konlpy.tag import Okt
 from collections import Counter
-import os
+import io
 
-# 1. 페이지 기본 설정
-st.set_page_config(page_title="WordCloud Maker", layout="wide")
+# 1. 페이지 설정
+st.set_page_config(page_title="Premium WordCloud Analyzer", layout="wide")
 
-# 2. 폰트 경로 설정 (가장 흔한 경로 3가지를 다 시도해봅니다)
-def get_font():
-    # 시도해볼 폰트 경로들
-    font_paths = [
-        "C:/Windows/Fonts/malgun.ttf",              # 윈도우
-        "/usr/share/fonts/truetype/nanum/NanumGothic.ttf", # 리눅스(서버)
-        "/System/Library/Fonts/Supplemental/AppleGothic.ttf", # 맥
-        "malgun.ttf" # 현재 폴더에 복사해둔 경우
-    ]
-    
-    for path in font_paths:
-        if os.path.exists(path):
-            return path
-    return None # 아무것도 없으면 None 반환 (기본 폰트 사용)
+# 2. 주식 시스템의 UI 스타일 이식 (그라데이션 + 호버 + 브라우저 폰트)
+st.markdown("""
+    <style>
+    /* 폰트 시스템: 사용자의 브라우저 폰트(맑은 고딕 등)를 최우선으로 사용 */
+    html, body, [class*="css"] {
+        font-family: 'Pretendard', 'Malgun Gothic', sans-serif !important;
+    }
 
-st.title("🌐 웹 & 파일 통합 워드클라우드")
-st.info("URL을 입력하거나 .txt 파일을 업로드하세요. (폰트가 없어도 실행됩니다!)")
+    /* 메인 타이틀: 그라데이션 디자인 */
+    .main-title {
+        font-size: 42px !important;
+        font-weight: 900;
+        background: linear-gradient(135deg, #FF4B4B 0%, #764BA2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+        margin-bottom: 10px;
+    }
 
-# --- 사이드바 설정 ---
+    /* 서브 타이틀 */
+    .sub-title {
+        text-align: center;
+        color: #888;
+        font-size: 18px;
+        margin-bottom: 30px;
+    }
+
+    /* 버튼 스타일: 주식 시스템의 호버 애니메이션 적용 */
+    div.stButton > button {
+        width: 100%;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #FF4B4B, #764BA2);
+        color: white !important;
+        font-weight: 700;
+        border: none;
+        padding: 12px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 15px rgba(255, 75, 75, 0.2);
+    }
+
+    /* 버튼 호버 시 효과 */
+    div.stButton > button:hover {
+        transform: translateY(-3px); /* 위로 띄우기 */
+        box-shadow: 0 8px 25px rgba(255, 75, 75, 0.4);
+        background: linear-gradient(135deg, #FF6B6B, #8E5ACD) !important;
+    }
+
+    /* 분석 결과 박스 디자인 */
+    .result-card {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 15px;
+        padding: 20px;
+        border: 1px solid rgba(255, 75, 75, 0.2);
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# 3. 상단 타이틀 섹션
+st.markdown('<div class="main-title">🌐 AI WORDCLOUD SYSTEM</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">데이터 시각화 및 키워드 추출 엔진</div>', unsafe_allow_html=True)
+
+# 4. 사이드바 및 입력 섹션
 with st.sidebar:
-    st.header("📂 데이터 소스")
-    choice = st.radio("분석 대상을 고르세요", ["URL 주소", "텍스트 파일(.txt)"])
+    st.header("⚙️ 분석 설정")
+    mode = st.radio("데이터 소스", ["웹페이지 URL", "텍스트 파일(.txt)"])
     
-    source_data = ""
-    if choice == "URL 주소":
+    if mode == "웹페이지 URL":
         url = st.text_input("분석할 주소", "https://n.news.naver.com/article/001/0014567890")
     else:
-        uploaded_file = st.file_uploader("파일 업로드", type=['txt'])
-
+        uploaded_file = st.file_uploader("파일 선택", type=['txt'])
+    
     st.divider()
-    max_words = st.number_input("최대 단어 수", value=100)
-    stop_words_raw = st.text_area("제외할 단어 (쉼표로 구분)", "기자, 뉴스, 무단, 배포, 금지")
-    stop_words = [x.strip() for x in stop_words_raw.split(",")]
+    max_words = st.slider("최대 단어 수", 50, 300, 100)
+    stop_words_input = st.text_area("제외할 단어", "기자, 뉴스, 배포, 금지")
+    stop_words = [w.strip() for w in stop_words_input.split(",")]
 
-# --- 분석 버튼 클릭 시 ---
-if st.button("분석 시작!"):
+# 5. 분석 로직
+if st.button("🚀 데이터 분석 및 워드클라우드 생성"):
     try:
-        with st.spinner("데이터를 가져오는 중..."):
-            # 데이터 가져오기
-            if choice == "URL 주소":
-                resp = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
-                resp.encoding = 'utf-8'
-                soup = BeautifulSoup(resp.text, 'html.parser')
-                for tag in soup(['script', 'style', 'header', 'footer']): tag.extract()
-                source_data = soup.get_text()
+        with st.spinner("데이터를 처리하는 중입니다..."):
+            # 데이터 수집
+            if mode == "웹페이지 URL":
+                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+                res.encoding = 'utf-8'
+                soup = BeautifulSoup(res.text, 'html.parser')
+                for s in soup(["script", "style"]): s.extract()
+                text = soup.get_text()
             else:
                 if uploaded_file:
-                    source_data = uploaded_file.read().decode('utf-8')
+                    text = uploaded_file.read().decode("utf-8")
                 else:
-                    st.warning("파일을 먼저 업로드해주세요!")
-                    st.stop()
+                    st.error("파일을 업로드해주세요."); st.stop()
 
-        if source_data:
-            # 형태소 분석 (명사 추출)
+            # 명사 추출
             okt = Okt()
-            nouns = [n for n in okt.nouns(source_data) if len(n) > 1 and n not in stop_words]
+            nouns = [n for n in okt.nouns(text) if len(n) > 1 and n not in stop_words]
             counts = Counter(nouns)
 
-            if not counts:
-                st.error("분석할 단어가 없습니다.")
-            else:
-                # 워드클라우드 생성
-                target_font = get_font()
-                
-                # 폰트가 없어도 에러 안 나게 처리
-                wc_params = {
-                    "background_color": "white",
-                    "width": 1000,
-                    "height": 600,
-                    "max_words": max_words,
-                    "colormap": "coolwarm",
-                    "random_state": 42
-                }
-                
-                if target_font:
-                    wc_params["font_path"] = target_font
-                
-                wc = WordCloud(**wc_params).generate_from_frequencies(counts)
+            if counts:
+                # 워드클라우드 생성 (폰트 경로 에러 방지 로직)
+                # 윈도우 기본 폰트 경로를 시도하되, 없으면 기본값 사용
+                font_path = "C:/Windows/Fonts/malgun.ttf"
+                import os
+                if not os.path.exists(font_path): font_path = None
 
-                # 시각화
+                wc = WordCloud(
+                    font_path=font_path,
+                    background_color="white",
+                    width=1200, height=700,
+                    max_words=max_words,
+                    colormap="coolwarm", # 빈도별 색상 (Blue -> Red)
+                    random_state=42
+                ).generate_from_frequencies(counts)
+
+                # 결과 출력
                 col1, col2 = st.columns([2, 1])
+                
                 with col1:
                     st.subheader("📊 시각화 결과")
-                    fig, ax = plt.subplots()
+                    fig, ax = plt.subplots(figsize=(10, 6))
                     ax.imshow(wc, interpolation='bilinear')
                     ax.axis('off')
                     st.pyplot(fig)
                 
                 with col2:
-                    st.subheader("🔝 인기 단어")
-                    for word, freq in counts.most_common(10):
-                        st.write(f"- **{word}**: {freq}회")
-                
-                if not target_font:
-                    st.warning("⚠️ 시스템에 한글 폰트가 없어 글자가 깨져 보일 수 있습니다. (코드가 멈추지는 않습니다)")
+                    st.subheader("🔝 주요 키워드")
+                    for i, (word, freq) in enumerate(counts.most_common(10)):
+                        color = "#FF4B4B" if i < 3 else "#764BA2"
+                        st.markdown(f"**{i+1}.** <span style='color:{color}; font-size:18px;'>{word}</span> ({freq}회)", unsafe_allow_html=True)
+            else:
+                st.warning("분석할 텍스트가 부족합니다.")
 
     except Exception as e:
         st.error(f"오류가 발생했습니다: {e}")
