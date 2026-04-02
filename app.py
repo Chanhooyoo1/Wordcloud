@@ -57,7 +57,7 @@ def create_mask(shape_type):
 # 3. 빈도 기반 컬러 함수
 def rainbow_color_func(word, font_size, position, orientation, random_state=None, **kwargs):
     if font_size > 100: return "rgb(255, 100, 90)"
-    elif font_size > 90: return "rgb(251, 101, 68)"
+    elif font_size > 90: return "rgb(255, 75, 88)"
     elif font_size > 60: return "rgb(254, 215, 195)"
     elif font_size > 45: return "rgb(151, 193, 169)"
     elif font_size > 30: return "rgb(20, 140, 255)"
