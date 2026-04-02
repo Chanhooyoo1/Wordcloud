@@ -6,11 +6,11 @@ import matplotlib.pyplot as plt
 from konlpy.tag import Okt
 from collections import Counter
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 import os
 
-# 1. 페이지 설정 및 프리미엄 UI 스타일 (그라데이션 & 호버 복구)
-st.set_page_config(page_title="Custom Heart Cloud Engine", layout="wide")
+# 1. 페이지 설정 및 프리미엄 스타일 (그라데이션 & 호버 애니메이션)
+st.set_page_config(page_title="Premium Mask Cloud Engine", layout="wide")
 
 st.markdown("""
     <style>
@@ -20,112 +20,130 @@ st.markdown("""
         font-family: 'Noto Sans KR', sans-serif !important;
     }
 
-    /* 그라데이션 타이틀 */
+    /* 프리미엄 그라데이션 타이틀 */
     .main-title {
-        font-size: 42px !important; font-weight: 900;
+        font-size: 42px; font-weight: 900;
         background: linear-gradient(135deg, #FF4B4B 0%, #764BA2 100%);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         text-align: center; margin-bottom: 5px;
     }
 
-    .sub-title {
-        text-align: center; color: #888; font-size: 16px;
-        letter-spacing: 2px; margin-bottom: 30px;
-    }
-
-    /* 입체적인 그라데이션 버튼 및 호버 효과 */
+    /* 버튼 스타일링: 그라데이션 + 입체감 */
     div.stButton > button {
-        width: 100%; border-radius: 12px;
-        background: linear-gradient(135deg, #FF4B4B 0%, #764BA2 100%);
-        color: white !important; font-weight: 700; border: none; padding: 15px;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(255, 75, 75, 0.2);
+        width: 100%;
+        height: 3.5em;
+        border-radius: 15px;
+        background: linear-gradient(135deg, #FF4B4B 0%, #764BA2 100%) !important;
+        color: white !important;
+        font-weight: 700 !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(255, 75, 75, 0.3);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
     }
 
+    /* 버튼 호버 효과: 솟아오름 + 그림자 강화 */
     div.stButton > button:hover {
-        transform: translateY(-3px); /* 위로 들림 */
-        box-shadow: 0 10px 25px rgba(255, 75, 75, 0.4);
-        background: linear-gradient(135deg, #FF6B6B 0%, #8E5ACD 100%) !important;
-        filter: brightness(1.1);
+        transform: translateY(-7px) !important;
+        box-shadow: 0 15px 30px rgba(255, 75, 75, 0.6) !important;
+        filter: brightness(1.2);
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 2. 무지개 컬러 함수 (빈도 기반)
-def rainbow_color_func(word, font_size, position, orientation, random_state=None, **kwargs):
-    if font_size > 75: return "rgb(255, 0, 0)"      # 빨강
-    elif font_size > 60: return "rgb(255, 165, 0)" # 주황
-    elif font_size > 45: return "rgb(255, 220, 0)" # 노랑
-    elif font_size > 30: return "rgb(0, 128, 0)"   # 초록
-    elif font_size > 20: return "rgb(0, 0, 255)"   # 파랑
-    else: return "rgb(148, 0, 211)"                # 보라
-
-# 3. 메인 화면 구성
-st.markdown('<div class="main-title">HEART-MASK INTELLIGENCE</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Premium Custom Shape Visualization System</div>', unsafe_allow_html=True)
-
-# 4. 사이드바 설정 (사용자 지정 마스크 업로드 추가)
-with st.sidebar:
-    st.header("⚙️ 분석 컨트롤러")
-    url = st.text_input("URL 입력", "https://n.news.naver.com/article/001/0014567890")
-    max_words = st.slider("최대 단어 수", 50, 500, 200)
+# 2. 도형 마스크 생성 함수 (이미지 파일 없이 코드로 생성)
+def create_mask(shape_type):
+    mask = Image.new("RGB", (1000, 1000), (255, 255, 255))
+    draw = ImageDraw.Draw(mask)
     
+    if shape_type == "하트(Heart)":
+        # 하트 그리기 로직 (간단한 다각형 조합)
+        draw.pieslice([(150, 200), (650, 700)], 180, 0, fill=(0, 0, 0))
+        draw.pieslice([(350, 200), (850, 700)], 180, 0, fill=(0, 0, 0))
+        draw.polygon([(150, 450), (500, 950), (850, 450)], fill=(0, 0, 0))
+    elif shape_type == "구름(Cloud)":
+        # 구름 모양 (여러 개의 원 조합)
+        draw.ellipse([100, 400, 400, 700], fill=(0, 0, 0))
+        draw.ellipse([300, 300, 700, 700], fill=(0, 0, 0))
+        draw.ellipse([600, 400, 900, 700], fill=(0, 0, 0))
+        draw.rectangle([250, 500, 750, 700], fill=(0, 0, 0))
+    elif shape_type == "원형(Circle)":
+        draw.ellipse([100, 100, 900, 900], fill=(0, 0, 0))
+    else: # 사각형
+        return None
+        
+    return np.array(mask)
+
+# 3. 빈도 기반 무지개 색상 함수
+def rainbow_color_func(word, font_size, position, orientation, random_state=None, **kwargs):
+    if font_size > 80: return "rgb(255, 0, 0)"
+    elif font_size > 60: return "rgb(255, 165, 0)"
+    elif font_size > 45: return "rgb(255, 220, 0)"
+    elif font_size > 30: return "rgb(0, 128, 0)"
+    elif font_size > 20: return "rgb(0, 0, 255)"
+    else: return "rgb(148, 0, 211)"
+
+# 4. 메인 UI 및 사이드바 선택지
+st.markdown('<div class="main-title">SHAPE-SELECT INTELLIGENCE</div>', unsafe_allow_html=True)
+st.write("<p style='text-align: center; color: #888;'>Select your shape and analyze</p>", unsafe_allow_html=True)
+
+with st.sidebar:
+    st.header("⚙️ 분석 및 도형 설정")
+    url = st.text_input("URL 입력", "https://n.news.naver.com/article/001/0014567890")
+    
+    # 도형 선택지 추가
+    selected_shape = st.selectbox("워드클라우드 모양 선택", ["사각형(Full)", "하트(Heart)", "구름(Cloud)", "원형(Circle)"])
+    
+    max_words = st.slider("단어수 제한", 50, 500, 200)
     st.divider()
-    st.header("🎨 마스크 설정")
-    mask_file = st.file_uploader("하트 모양 등 마스크 이미지 업로드 (흰 배경 권장)", type=["png", "jpg", "jpeg"])
+    st.info("💡 '나눔고딕' 폰트를 사용하여 분석합니다.")
 
 # 5. 실행 로직
-if st.button("🚀 하트 분석 엔진 가동"):
-    try:
-        with st.spinner("언어 데이터 분석 및 마스킹 작업 중..."):
-            # 크롤링
-            res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
-            res.encoding = 'utf-8'
-            soup = BeautifulSoup(res.text, 'html.parser')
-            text = soup.select_one('article').get_text() if soup.select_one('article') else soup.get_text()
+if st.button("🚀 선택한 모양으로 분석 시작"):
+    font_path = "NanumGothic.ttf"
+    
+    if not os.path.exists(font_path):
+        st.error(f"⚠️ '{font_path}' 파일이 없습니다! 폴더에 폰트를 넣어주세요.")
+    else:
+        try:
+            with st.spinner(f"{selected_shape} 모양으로 렌더링 중..."):
+                # 1. 크롤링
+                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+                res.encoding = 'utf-8'
+                soup = BeautifulSoup(res.text, 'html.parser')
+                content = soup.get_text()
 
-            # 형태소 분석
-            okt = Okt()
-            nouns = [n for n in okt.nouns(text) if len(n) > 1]
-            counts = Counter(nouns)
+                # 2. 형태소 분석
+                okt = Okt()
+                nouns = [n for n in okt.nouns(content) if len(n) > 1]
+                counts = Counter(nouns)
 
-            # 마스크 처리
-            mask_array = None
-            if mask_file:
-                mask_image = Image.open(mask_file)
-                mask_array = np.array(mask_image)
+                # 3. 마스크 생성
+                mask_arr = create_mask(selected_shape)
 
-            # 폰트 경로 설정
-            font_path = "C:/Windows/Fonts/malgun.ttf" # 윈도우 기준
-            if not os.path.exists(font_path):
-                font_path = "/usr/share/fonts/truetype/nanum/NanumGothic.ttf" # 리눅스/서버 기준
+                # 4. 워드클라우드 생성
+                wc = WordCloud(
+                    font_path=font_path,
+                    background_color="white",
+                    width=1000, height=1000,
+                    max_words=max_words,
+                    mask=mask_arr,
+                    color_func=rainbow_color_func,
+                    contour_width=1 if mask_arr is not None else 0,
+                    contour_color='lightgrey'
+                ).generate_from_frequencies(counts)
 
-            # 워드클라우드 생성
-            wc = WordCloud(
-                font_path=font_path if os.path.exists(font_path) else None,
-                background_color="white",
-                width=1200, height=800,
-                max_words=max_words,
-                mask=mask_array,  # 사용자가 올린 하트 이미지 적용
-                contour_width=1,
-                contour_color='firebrick',
-                color_func=rainbow_color_func,
-                random_state=42
-            ).generate_from_frequencies(counts)
+                # 5. 결과 시각화
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    fig, ax = plt.subplots(figsize=(10, 10))
+                    ax.imshow(wc, interpolation='bilinear')
+                    ax.axis('off')
+                    st.pyplot(fig)
 
-            # 결과 시각화
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.subheader("📊 커스텀 마스크 결과")
-                fig, ax = plt.subplots(figsize=(10, 7))
-                ax.imshow(wc, interpolation='bilinear')
-                ax.axis('off')
-                st.pyplot(fig)
+                with col2:
+                    st.subheader("🔝 빈도 TOP 15")
+                    for i, (word, freq) in enumerate(counts.most_common(15)):
+                        st.write(f"**{i+1}. {word}** ({freq}회)")
 
-            with col2:
-                st.subheader("🔝 TOP 10 키워드")
-                for i, (word, freq) in enumerate(counts.most_common(10)):
-                    st.write(f"**{i+1}. {word}** ({freq}회)")
-
-    except Exception as e:
-        st.error(f"엔진 오류: {e}")
+        except Exception as e:
+            st.error(f"엔진 오류: {e}")
