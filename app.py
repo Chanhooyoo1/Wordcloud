@@ -58,9 +58,9 @@ def create_mask(shape_type):
 def rainbow_color_func(word, font_size, position, orientation, random_state=None, **kwargs):
     if font_size > 80: return "rgb(255, 0, 0)"
     elif font_size > 60: return "rgb(255, 165, 0)"
-    elif font_size > 45: return "rgb(255, 220, 0)"
+    elif font_size > 45: return "rgb(0, 128, 0)"
     elif font_size > 30: return "rgb(0, 0, 255)"
-    elif font_size > 20: return "rgb(0, 0, 255)"
+    elif font_size > 20: return "rgb(148, 0, 211)"
     else: return "rgb(148, 0, 211)"
 
 # 4. 사이드바 구성
