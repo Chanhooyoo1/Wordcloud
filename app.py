@@ -101,21 +101,37 @@ if st.button("워드클라우드 생성하기!"):
                     # 본문 영역 탐색
                     target = soup.select_one('article, #articleBodyContents, .article_body, body')
                     content = target.get_text() if target else ""
-                
-                # 파일 업로드 로직 강화 (인코딩 대응)
-                elif source_type == "텍스트 파일 업로드" and uploaded_file:
-                    raw_bytes = uploaded_file.read()
-                    for enc in ['utf-8', 'cp949', 'euc-kr']:
-                        try:
-                            content = raw_bytes.decode(enc)
-                            break
-                        except UnicodeDecodeError:
-                            continue
-
-                if not content or len(content.strip()) < 10:
-                    st.warning("어라, 제대로 입력하셨나요? 파일이나 주소가 정확히 입력되었는지 확인해 주세요.")
-                    st.stop()
-
+                # --- 이 부분을 기존 코드의 if source_type == "URL 크롤링" 블록에 덮어쓰세요 ---
+                if source_type == "URL 크롤링" and url:
+                    headers = {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                        'Referer': 'https://www.google.com/'
+                    }
+                    res = requests.get(url, headers=headers, timeout=15)
+                    res.raise_for_status()
+                    res.encoding = res.apparent_encoding # 인코딩 자동 감지 강화
+                    
+                    soup = BeautifulSoup(res.content, 'html.parser')
+                    
+                    # 1. 광고, 메뉴, 푸터 등 잡음 제거
+                    for junk in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'iframe', 'button', 'input']):
+                        junk.decompose()
+                    
+                    # 2. 본문 추정 로직 (글자수가 가장 많은 태그 찾기)
+                    # article, div, section 중 가장 내용이 풍부한 곳을 선택
+                    potential_bodies = soup.find_all(['article', 'div', 'main', 'section'])
+                    
+                    best_text = ""
+                    for pb in potential_bodies:
+                        # 하위 태그들 사이 공백을 주어 단어가 붙지 않게 추출
+                        txt = pb.get_text(separator=' ', strip=True)
+                        if len(txt) > len(best_text):
+                            best_text = txt
+                    
+                    # 추출된 텍스트가 너무 짧으면 전체 페이지 텍스트 사용
+                    content = best_text if len(best_text) > 100 else soup.get_text(separator=' ', strip=True)
+                # ------------------------------------------------------------------
                 # 형태소 분석
                 okt = Okt()
                 nouns = [n for n in okt.nouns(content) if len(n) > 1]
