@@ -71,7 +71,7 @@ with st.sidebar:
     source_type = st.radio("입력 방식", ["웹사이트로 생성하기", "텍스트 파일 업로드"])
     
     if source_type == "웹사이트로 생성하기":
-        url = st.text_input("주소를 입력해주세요.", "https://n.news.naver.com/article/001/0014567890")
+        url = st.text_input("주소를 입력해주세요.", "https://news.google.com/home?hl=ko&gl=KR&ceid=KR%3Ako")
         uploaded_file = None
     else:
         uploaded_file = st.file_uploader("텍스트 파일 선택", type=["txt"])
@@ -86,11 +86,11 @@ with st.sidebar:
 if st.button("워드클라우드 생성하기!"):
     font_path = "SeoulAlrimTTF-Bold.ttf"
     if not os.path.exists(font_path):
-        st.error("비상초비상! 폰트 파일이 없습니다. 찬후에게 빨리 연락하세요!")
+        st.error("삐뽀삐뽀삐뽀비상초비상글꼴파일이없대요찬후한테빨리말을하던지전화를하던이하세요물의를끼쳐드려죄송합니다내일바로도게자박겟습니다내일보면말끔히고쳐져있을거예요죄송합니다")
     else:
         try:
             content = ""
-            with st.spinner("데이터를 가져오는 중입니다..."):
+            with st.spinner("자료를 가져오는 중이에요..."):
                 # --- [수정된 데이터 로드 로직] ---
                 if source_type == "웹사이트로 생성하기" and url:
                     headers = {
@@ -112,7 +112,7 @@ if st.button("워드클라우드 생성하기!"):
                     else:
                         content = soup.get_text(separator=' ', strip=True)
 
-                elif source_type == "텍스트 파일 업로드" and uploaded_file:
+                elif source_type == "텍스트 파일 불러오기" and uploaded_file:
                     raw_bytes = uploaded_file.read()
                     # 인코딩 대응
                     for enc in ['utf-8', 'cp949', 'euc-kr']:
@@ -123,14 +123,14 @@ if st.button("워드클라우드 생성하기!"):
 
                 # 형태소 분석 전 텍스트 체크
                 if not content or len(content.strip()) < 10:
-                    st.warning("분석할 텍스트를 찾지 못했습니다. 주소나 파일을 확인해주세요.")
+                    st.warning("어음.. 뭔가 문제가 생겼어요. 텍스트 파일을 확인하거나 주소가 잘못되지는 않았는지 다시 확인해보세요!")
                     st.stop()
 
                 # 형태소 분석
                 okt = Okt()
                 nouns = [n for n in okt.nouns(content) if len(n) > 1]
                 if not nouns:
-                    st.warning("분석할 수 있는 명사 단어가 없어요.")
+                    st.warning("분석할 수 있는 단어가 없어요!")
                     st.stop()
 
                 counts = Counter(nouns)
@@ -160,4 +160,4 @@ if st.button("워드클라우드 생성하기!"):
                         st.write(f"**{i+1}. {word}** ({freq})")
 
         except Exception as e:
-            st.error(f"초비상! 오류 발생: {e}")
+            st.error(f"삐뽀삐뽀삐뽀삐뽀삐뽀삐뽀초비상여러분을실망시켜드리어서죄송합니다도게자박을게요다음날말씀해주시면바로박겟습니다어왜오류가발생했지이거찬후한테말을하던지전화를하던지해주세요제발요제가이런물의를끼쳐드려서죄송합니다아마도다음날이면말끔히고쳐져잇을거에요진짜로요: {e}")
