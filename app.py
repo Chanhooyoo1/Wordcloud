@@ -155,24 +155,24 @@ if st.button("워드클라우드 생성하기!"):
 
                 # 워드클라우드 생성
                 # 워드클라우드 생성 부분 수정
-wc = WordCloud(
-    font_path=font_path,
-    background_color="white",
-    width=1000, 
-    height=1000,
-    max_words=max_words,
-    mask=mask_arr,
-    color_func=rainbow_color_func,
-    
-    # --- [여백 줄이기 필살기 설정] ---
-    margin=0,               # 단어 사이의 기본 테두리 여백을 0으로 설정
-    prefer_horizontal=0.9,   # 단어를 가로로만 배치할지 결정 (1에 가까울수록 가로 위주, 빈틈 채우기 유리)
-    relative_scaling=0.5,    # 0이면 순위 위주, 1이면 빈도 비례. 0.5 정도가 빈틈 없이 채우기 가장 좋음
-    min_font_size=10,        # 너무 작은 단어도 포함시켜서 빈 공간(구석)을 메우도록 유도
-    # -------------------------------
-    
-    contour_width=0
-).generate_from_frequencies(counts)
+                wc = WordCloud(
+                    font_path=font_path,
+                    background_color="white",
+                    width=1000, 
+                    height=1000,
+                    max_words=max_words,
+                    mask=mask_arr,
+                    color_func=rainbow_color_func,
+                    
+                    # --- [여백 줄이기 필살기 설정] ---
+                    margin=0,               # 단어 사이의 기본 테두리 여백을 0으로 설정
+                    prefer_horizontal=0.9,   # 단어를 가로로만 배치할지 결정 (1에 가까울수록 가로 위주, 빈틈 채우기 유리)
+                    relative_scaling=0.5,    # 0이면 순위 위주, 1이면 빈도 비례. 0.5 정도가 빈틈 없이 채우기 가장 좋음
+                    min_font_size=10,        # 너무 작은 단어도 포함시켜서 빈 공간(구석)을 메우도록 유도
+                    # -------------------------------
+                    
+                    contour_width=0
+                ).generate_from_frequencies(counts)
 
                 # 결과 출력
                 col1, col2 = st.columns([3, 1])
