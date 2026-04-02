@@ -167,6 +167,35 @@ if st.button("워드클라우드 생성하기!"):
 
                 # 4. 워드클라우드 생성 (여백 최소화 설정)
 # 워드클라우드 생성 부분 코드를 아래 설정으로 교체하세요.
+                # --- [추가] 모양(마스크) 결정 로직 ---
+                mask_arr = None  # 초기화
+
+                if shape_option == "직접 글자 입력":
+                    width = 400 + (len(user_shape) * 200)
+                    mask_img = Image.new("L", (width, 600), 255)
+                    draw = ImageDraw.Draw(mask_img)
+                    try:
+                        font = ImageFont.truetype(font_path, 400)
+                    except:
+                        font = ImageFont.load_default()
+                    w, h = draw.textbbox((0, 0), user_shape, font=font)[2:]
+                    draw.text(((width-w)/2, (600-h)/2), user_shape, fill=0, font=font)
+                    mask_arr = np.array(mask_img)
+                
+                elif shape_option == "이미지 파일 업로드" and mask_file:
+                    mask_img = Image.open(mask_file).convert('L')
+                    mask_arr = np.array(mask_img)
+                    mask_arr = np.where(mask_arr > 128, 255, 0).astype(np.uint8)
+                
+                elif shape_option == "기본 도형":
+                    mask_arr = create_mask(selected_shape)
+
+                # [에러 방지] 어떤 이유로든 mask_arr가 생성되지 않았다면 기본 사각형 생성
+                if mask_arr is None:
+                    mask_arr = np.full((1000, 1000), 0, dtype=np.uint8) 
+                # ------------------------------------------
+
+                # 이제 이 아래에 올려주신 wc = WordCloud(...) 코드가 오면 됩니다.
                 wc = WordCloud(
                     font_path=font_path,
                     background_color="#1a1c23", # 어두운 배경
