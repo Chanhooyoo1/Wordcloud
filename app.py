@@ -84,19 +84,28 @@ def rainbow_color_func(word, font_size, position, orientation, random_state=None
 st.markdown('<div class="main-title">워드클라우드 생성기</div>', unsafe_allow_html=True)
 
 with st.sidebar:
-    st.header("📂 불러올 방식 선택하기")
+    st.header("📂 1. 데이터 소스")
     source_type = st.radio("입력 방식", ["웹사이트로 생성하기", "텍스트 파일 업로드"])
     
     if source_type == "웹사이트로 생성하기":
-        url = st.text_input("주소를 입력해주세요.", "https://news.google.com/home?hl=ko&gl=KR&ceid=KR%3Ako")
+        url = st.text_input("주소를 입력해주세요.", "https://news.google.com")
         uploaded_file = None
     else:
         uploaded_file = st.file_uploader("텍스트 파일 선택", type=["txt"])
         url = None
 
     st.divider()
-    st.header("디자인 설정")
-    selected_shape = st.selectbox("워드클라우드 모양 선택", ["하트모양", "구름모양", "동그라미", "사각형"])
+    st.header("🎨 2. 모양 설정")
+    # 모양 선택 방식을 추가했습니다.
+    shape_option = st.selectbox("모양 결정 방식", ["직접 글자 입력", "이미지 파일 업로드", "기본 도형"])
+    
+    if shape_option == "직접 글자 입력":
+        user_shape = st.text_input("원하는 글자를 입력하세요", "ESTJ")
+    elif shape_option == "이미지 파일 업로드":
+        mask_file = st.file_uploader("모양으로 쓸 이미지 업로드", type=["jpg", "jpeg", "png"])
+    else:
+        selected_shape = st.selectbox("도형 선택", ["하트모양", "구름모양", "동그라미", "사각형"])
+
     max_words = st.slider("생성할 단어 수", 50, 500, 250)
 
 # 5. 분석 엔진 가동
