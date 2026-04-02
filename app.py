@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw
 import os
 
 # 1. 스타일 설정 (그라데이션 & 호버 애니메이션)
-st.set_page_config(page_title="Premium WordCloud Engine", layout="wide")
+st.set_page_config(page_title="워드클라우드 생성기", layout="wide")
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;900&display=swap');
@@ -41,16 +41,16 @@ st.markdown("""
 def create_mask(shape_type):
     mask = Image.new("RGB", (1000, 1000), (255, 255, 255))
     draw = ImageDraw.Draw(mask)
-    if shape_type == "하트(Heart)":
+    if shape_type == "하트모양":
         draw.pieslice([(150, 200), (650, 700)], 180, 0, fill=(0, 0, 0))
         draw.pieslice([(350, 200), (850, 700)], 180, 0, fill=(0, 0, 0))
         draw.polygon([(150, 450), (500, 950), (850, 450)], fill=(0, 0, 0))
-    elif shape_type == "구름(Cloud)":
+    elif shape_type == "구름모양":
         draw.ellipse([100, 400, 400, 700], fill=(0, 0, 0))
         draw.ellipse([300, 300, 700, 700], fill=(0, 0, 0))
         draw.ellipse([600, 400, 900, 700], fill=(0, 0, 0))
         draw.rectangle([250, 500, 750, 700], fill=(0, 0, 0))
-    elif shape_type == "원형(Circle)":
+    elif shape_type == "동그라미":
         draw.ellipse([100, 100, 900, 900], fill=(0, 0, 0))
     else: return None
     return np.array(mask)
@@ -65,35 +65,35 @@ def rainbow_color_func(word, font_size, position, orientation, random_state=None
     else: return "rgb(148, 0, 211)"
 
 # 4. 사이드바 구성
-st.markdown('<div class="main-title">NO-BORDER CLOUD ENGINE</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">워드클라우드 생성기</div>', unsafe_allow_html=True)
 
 with st.sidebar:
-    st.header("📂 데이터 소스")
-    source_type = st.radio("입력 방식", ["URL 크롤링", "TXT 파일 업로드"])
+    st.header("📂 불러올 방식 선택하기")
+    source_type = st.radio("입력 방식", ["웹사이트로 생성하기", "텍스트 파일 업로드"])
     
-    if source_type == "URL 크롤링":
-        url = st.text_input("URL 입력", "https://n.news.naver.com/article/001/0014567890")
+    if source_type == "웹사이트로 생성하기":
+        url = st.text_input("주소를 입력해주세요.", "https://news.google.com/home?hl=ko&gl=KR&ceid=KR%3Ako")
         uploaded_file = None
     else:
-        uploaded_file = st.file_uploader("TXT 파일 선택", type=["txt"])
+        uploaded_file = st.file_uploader("텍스트 파일 선택", type=["txt"])
         url = None
 
     st.divider()
-    st.header("🎨 디자인 설정")
-    selected_shape = st.selectbox("모양 선택", ["하트(Heart)", "구름(Cloud)", "원형(Circle)", "사각형(Full)"])
-    max_words = st.slider("최대 단어 수", 50, 500, 250)
+    st.header("디자인 설정")
+    selected_shape = st.selectbox("워드클라우드 모양 선택", ["하트모양", "구름모양", "동그라미", "사각형"])
+    max_words = st.slider("생성할 단어 수", 50, 500, 250)
 
 # 5. 분석 엔진 가동
-if st.button("🚀 무지개 분석 엔진 가동"):
+if st.button("워드클라우드 생성하기!"):
     font_path = "SeoulAlrimTTF-Bold.ttf"
     if not os.path.exists(font_path):
-        st.error("⚠️ 폴더에 'NanumGothic.ttf' 파일이 필요합니다!")
+        st.error("비상초비상폰트파일이없다삐뽀삐뽀삐뽀삐뽀찬후한테발리전화를하던지말을하던지해주세요제발요")
     else:
         try:
             content = ""
-            with st.spinner("데이터를 가져오는 중..."):
+            with st.spinner("가져오는 중입니다..."):
                 # URL 크롤링 로직 강화
-                if source_type == "URL 크롤링" and url:
+                if source_type == "주소로 생성하기" and url:
                     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
                     res = requests.get(url, headers=headers, timeout=10)
                     res.encoding = 'utf-8'
@@ -103,7 +103,7 @@ if st.button("🚀 무지개 분석 엔진 가동"):
                     content = target.get_text() if target else ""
                 
                 # 파일 업로드 로직 강화 (인코딩 대응)
-                elif source_type == "TXT 파일 업로드" and uploaded_file:
+                elif source_type == "텍스트 파일 업로드" and uploaded_file:
                     raw_bytes = uploaded_file.read()
                     for enc in ['utf-8', 'cp949', 'euc-kr']:
                         try:
@@ -113,14 +113,14 @@ if st.button("🚀 무지개 분석 엔진 가동"):
                             continue
 
                 if not content or len(content.strip()) < 10:
-                    st.warning("⚠️ 데이터를 불러오지 못했습니다. URL이나 파일 내용을 확인해주세요.")
+                    st.warning("어라, 제대로 입력하셨나요? 파일이나 주소가 정확히 입력되었는지 확인해 주세요.")
                     st.stop()
 
                 # 형태소 분석
                 okt = Okt()
                 nouns = [n for n in okt.nouns(content) if len(n) > 1]
                 if not nouns:
-                    st.warning("⚠️ 분석할 수 있는 명사가 없습니다.")
+                    st.warning("분석할 수 있는 단어가 없어요. 글자 수가 너무 적나봐요.")
                     st.stop()
 
                 counts = Counter(nouns)
@@ -146,9 +146,9 @@ if st.button("🚀 무지개 분석 엔진 가동"):
                     ax.axis('off')
                     st.pyplot(fig)
                 with col2:
-                    st.subheader("🔝 주요 키워드")
-                    for i, (word, freq) in enumerate(counts.most_common(15)):
+                    st.subheader("주요 키워드 Top 10")
+                    for i, (word, freq) in enumerate(counts.most_common(10)):
                         st.write(f"**{i+1}. {word}** ({freq})")
 
         except Exception as e:
-            st.error(f"오류가 발생했습니다: {e}")
+            st.error(f"삐뽀삐뽀삐뽀삐뽀삐뽀삐뽀초비상여러분을실망시켜드리어서죄송합니다도게자박을게요다음날말씀해주시면바로박겟습니다어왜오류가발생했지이거찬후한테말을하던지전화를하던지해주세요제발요제가이런물의를끼쳐드려서죄송합니다아마도다음날이면말끔히고쳐져잇을거에요진짜로요: {e}")
