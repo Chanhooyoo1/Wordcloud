@@ -1,7 +1,8 @@
 streamlit
+requests
+beautifulsoup4
 wordcloud
 matplotlib
 konlpy
-requests
-beautifulsoup4
 numpy
+Pillow
