@@ -88,7 +88,7 @@ with st.sidebar:
     source_type = st.radio("입력 방식", ["웹사이트로 생성하기", "텍스트 파일 업로드"])
     
     if source_type == "웹사이트로 생성하기":
-        url = st.text_input("주소를 입력해주세요.", "https://news.google.com")
+        url = st.text_input("주소를 입력해주세요.", "https://news.google.com/home?hl=ko&gl=KR&ceid=KR%3Ako")
         uploaded_file = None
     else:
         uploaded_file = st.file_uploader("텍스트 파일 선택", type=["txt"])
@@ -111,12 +111,12 @@ with st.sidebar:
     max_words = st.slider("생성할 단어 수", 50, 500, 250)
 # 5. 분석 엔진 가동
 if st.button("워드클라우드 생성하기!"):
-    font_path = "SeoulAlrimTTF-Bold.ttf"
+    font_path = ""
     if not os.path.exists(font_path):
         st.error("삐뽀삐뽀삐뽀비상초비상글꼴파일이없대요찬후한테빨리말을하던지전화를하던이하세요물의를끼쳐드려죄송합니다내일바로도게자박겟습니다내일보면말끔히고쳐져있을거예요죄송합니다")
     else:
         try:
-            content = ""
+            content = "NanumGothicExtraBold.ttf"
             mask_arr = None  # 마스크 변수 초기화 (에러 방지)
 
             with st.spinner("생성 중이예요..."):
