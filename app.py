@@ -84,15 +84,35 @@ def rainbow_color_func(word, font_size, position, orientation, random_state=None
 st.markdown('<div class="main-title">워드클라우드 생성기</div>', unsafe_allow_html=True)
 
 with st.sidebar:
-    st.header("📂 1. 데이터 소스")
-    source_type = st.radio("입력 방식", ["웹사이트로 생성하기", "텍스트 파일 업로드"])
-    
-    if source_type == "웹사이트로 생성하기":
-        url = st.text_input("주소를 입력해주세요.", "https://news.google.com")
-        uploaded_file = None
-    else:
-        uploaded_file = st.file_uploader("텍스트 파일 선택", type=["txt"])
-        url = None
+# --- [수정된 마스크 결정 로직] ---
+            mask_arr = None  # 초기화
+
+            if shape_option == "직접 글자 입력":
+                # 사용자가 입력한 글자로 마스크 생성
+                width = 400 + (len(user_shape) * 200)
+                mask_img = Image.new("RGB", (width, 600), (255, 255, 255))
+                draw = ImageDraw.Draw(mask_img)
+                # 폰트 설정 (폰트 파일 경로 확인 필수)
+                font = ImageFont.truetype(font_path, 400)
+                w, h = draw.textbbox((0, 0), user_shape, font=font)[2:]
+                draw.text(((width-w)/2, (600-h)/2), user_shape, fill=(0, 0, 0), font=font)
+                mask_arr = np.array(mask_img)
+            
+            elif shape_option == "이미지 파일 업로드" and mask_file:
+                # 업로드한 이미지로 마스크 생성
+                mask_img = Image.open(mask_file).convert('L')
+                mask_arr = np.array(mask_img)
+                # 배경(흰색)과 모양(검은색) 대비 강화
+                mask_arr = np.where(mask_arr > 128, 255, 0).astype(np.uint8)
+            
+            elif shape_option == "기본 도형":
+                # 사이드바에서 선택한 'selected_shape'가 있을 때만 실행
+                mask_arr = create_mask(selected_shape)
+            
+            else:
+                # 아무것도 해당 안 될 때 기본값 (사각형)
+                mask_arr = None 
+            # --------------------------------------
 
     st.divider()
     st.header("🎨 2. 모양 설정")
