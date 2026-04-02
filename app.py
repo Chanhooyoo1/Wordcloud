@@ -38,21 +38,40 @@ st.markdown("""
 
 # 2. 마스크 생성 함수
 def create_mask(shape_type):
-    mask = Image.new("RGB", (1000, 1000), (255, 255, 255))
+    # 배경을 흰색(255)으로 설정한 'L'(회색조) 모드 이미지 생성
+    mask = Image.new("L", (1000, 1000), 255)
     draw = ImageDraw.Draw(mask)
+    
     if shape_type == "하트모양":
-        draw.pieslice([(150, 200), (650, 700)], 180, 0, fill=(0, 0, 0))
-        draw.pieslice([(350, 200), (850, 700)], 180, 0, fill=(0, 0, 0))
-        draw.polygon([(150, 450), (500, 950), (850, 450)], fill=(0, 0, 0))
+        # 왼쪽 원
+        draw.ellipse([150, 150, 550, 550], fill=0)
+        # 오른쪽 원
+        draw.ellipse([450, 150, 850, 550], fill=0)
+        # 아래쪽 역삼각형 (좌표를 더 뾰족하고 예쁘게 조정)
+        draw.polygon([(158, 380), (500, 900), (842, 380)], fill=0)
+        
     elif shape_type == "구름모양":
-        draw.ellipse([100, 400, 400, 700], fill=(0, 0, 0))
-        draw.ellipse([300, 300, 700, 700], fill=(0, 0, 0))
-        draw.ellipse([600, 400, 900, 700], fill=(0, 0, 0))
-        draw.rectangle([250, 500, 750, 700], fill=(0, 0, 0))
+        draw.ellipse([100, 400, 450, 750], fill=0)
+        draw.ellipse([300, 250, 750, 700], fill=0)
+        draw.ellipse([600, 400, 950, 750], fill=0)
+        draw.rectangle([250, 500, 750, 750], fill=0)
+        
     elif shape_type == "동그라미":
-        draw.ellipse([100, 100, 900, 900], fill=(0, 0, 0))
-    else: return None
-    return np.array(mask)
+        draw.ellipse([50, 50, 950, 950], fill=0)
+        
+    elif shape_type == "사각형":
+        draw.rectangle([50, 50, 950, 950], fill=0)
+        
+    else: 
+        return None
+    
+    # 생성된 이미지를 넘파이 배열로 변환
+    mask_array = np.array(mask)
+    
+    # 중요: 0(검정)과 255(흰색) 이외의 애매한 값을 방지하기 위해 이진화 처리
+    mask_array = np.where(mask_array < 128, 0, 255).astype(np.uint8)
+    
+    return mask_array
 
 # 3. 빈도 기반 컬러 함수 (큰 단어 = 파란색 계열)
 def rainbow_color_func(word, font_size, position, orientation, random_state=None, **kwargs):
