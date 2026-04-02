@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw
 import os
 
 # 1. 스타일 설정 (그라데이션 & 호버 애니메이션)
-st.set_page_config(page_title="무설치 워드클라우드 생성기", layout="wide")
+st.set_page_config(page_title="Multi-Source Cloud Engine", layout="wide")
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;900&display=swap');
@@ -36,20 +36,20 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 2. 마스크 및 컬러 함수 (이전과 동일)
+# 2. 마스크 및 컬러 함수
 def create_mask(shape_type):
     mask = Image.new("RGB", (1000, 1000), (255, 255, 255))
     draw = ImageDraw.Draw(mask)
-    if shape_type == "하트모양":
+    if shape_type == "하트(Heart)":
         draw.pieslice([(150, 200), (650, 700)], 180, 0, fill=(0, 0, 0))
         draw.pieslice([(350, 200), (850, 700)], 180, 0, fill=(0, 0, 0))
         draw.polygon([(150, 450), (500, 950), (850, 450)], fill=(0, 0, 0))
-    elif shape_type == "구름모양":
+    elif shape_type == "구름(Cloud)":
         draw.ellipse([100, 400, 400, 700], fill=(0, 0, 0))
         draw.ellipse([300, 300, 700, 700], fill=(0, 0, 0))
         draw.ellipse([600, 400, 900, 700], fill=(0, 0, 0))
         draw.rectangle([250, 500, 750, 700], fill=(0, 0, 0))
-    elif shape_type == "동그라미":
+    elif shape_type == "원형(Circle)":
         draw.ellipse([100, 100, 900, 900], fill=(0, 0, 0))
     else: return None
     return np.array(mask)
@@ -66,49 +66,60 @@ def rainbow_color_func(word, font_size, position, orientation, random_state=None
 st.markdown('<div class="main-title">MULTI-SOURCE INTELLIGENCE</div>', unsafe_allow_html=True)
 
 with st.sidebar:
-    st.header("불러올 매체 선택")
-    # --- 변경 포인트 1: 입력 방식 선택 라디오 버튼 ---
-    source_type = st.radio("분석할 대상을 선택하세요", ["웹페이지 주소", "텍스트 파일 업로드"])
+    st.header("⚙️ 데이터 소스 선택")
+    source_type = st.radio("분석 대상을 선택하세요", ["URL 크롤링", "TXT 파일 업로드"])
     
-    if source_type == "웹페이지 주소":
-        url = st.text_input("주소 입력", "https://news.google.com/home?hl=ko&gl=KR&ceid=KR%3Ako")
+    if source_type == "URL 크롤링":
+        url = st.text_input("URL 입력", "https://n.news.naver.com/article/001/0014567890")
         uploaded_file = None
     else:
-        # --- 변경 포인트 2: 파일 업로더 추가 ---
-        uploaded_file = st.file_uploader("텍스트 파일을 선택해주세요", type=["txt"])
+        uploaded_file = st.file_uploader("텍스트(.txt) 파일을 선택하세요", type=["txt"])
         url = None
 
     st.divider()
-    selected_shape = st.selectbox("워드클라우드 모양 선택", ["사각형", "하트모양", "구름모양", "동그라미"])
-    max_words = st.slider("단어 수 선택", 50, 500, 200)
+    selected_shape = st.selectbox("모양 선택", ["사각형(Full)", "하트(Heart)", "구름(Cloud)", "원형(Circle)"])
+    max_words = st.slider("단어수 제한", 50, 500, 200)
 
 # 4. 분석 실행 로직
-if st.button("생성하기!"):
+if st.button("🚀 분석 엔진 가동"):
     font_path = "NanumGothic.ttf"
     if not os.path.exists(font_path):
-        st.error("파일이없대요삐뽀삐뽀당장찬후한테전화를걸든지말을하던지하세요")
+        st.error("⚠️ 'NanumGothic.ttf' 파일이 없습니다! 폰트를 폴더에 넣어주세요.")
     else:
         try:
             content = ""
-            with st.spinner("생성 중이예요."):
-                # --- 변경 포인트 3: 소스에 따라 텍스트를 읽어오는 조건문 ---
-                if source_type == "사이트 주소로 생성" and url:
-                    res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with st.spinner("데이터 분석 중..."):
+                # --- 수정 포인트: 데이터 읽기 로직 강화 ---
+                if source_type == "URL 크롤링" and url:
+                    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+                    res = requests.get(url, headers=headers)
                     res.encoding = 'utf-8'
                     soup = BeautifulSoup(res.text, 'html.parser')
-                    content = soup.get_text()
+                    # 뉴스 기사 본문 위주로 가져오되 없으면 전체 텍스트
+                    article = soup.select_one('article') or soup.select_one('#articleBodyContents') or soup.body
+                    content = article.get_text() if article else ""
                 
-                elif source_type == "텍스트 파일 업로드" and uploaded_file:
-                    # 업로드된 파일을 문자열로 변환
-                    content = uploaded_file.read().decode("utf-8")
+                elif source_type == "TXT 파일 업로드" and uploaded_file:
+                    # 인코딩 오류 방지 (utf-8 시도 후 안되면 cp949)
+                    raw_data = uploaded_file.read()
+                    try:
+                        content = raw_data.decode("utf-8")
+                    except UnicodeDecodeError:
+                        content = raw_data.decode("cp949")
                 
-                if not content:
-                    st.warning("텍스트 파일 선택을 안했나봐요. 다시 시도해보세요.")
+                # 내용 검증
+                if not content or len(content.strip()) < 5:
+                    st.warning("⚠️ 읽어온 텍스트 내용이 너무 적거나 없습니다. 소스를 확인해주세요.")
                     st.stop()
 
-                # 분석 및 렌더링 (이전과 동일)
+                # 형태소 분석
                 okt = Okt()
                 nouns = [n for n in okt.nouns(content) if len(n) > 1]
+                
+                if not nouns:
+                    st.warning("⚠️ 분석된 명사가 없습니다. 다른 텍스트를 입력해보세요.")
+                    st.stop()
+
                 counts = Counter(nouns)
                 mask_arr = create_mask(selected_shape)
 
@@ -125,9 +136,9 @@ if st.button("생성하기!"):
                     ax.imshow(wc, interpolation='bilinear'); ax.axis('off')
                     st.pyplot(fig)
                 with col2:
-                    st.subheader("Top 15")
+                    st.subheader("🔝 빈도 TOP 15")
                     for i, (word, freq) in enumerate(counts.most_common(15)):
                         st.write(f"**{i+1}. {word}** ({freq}회)")
 
         except Exception as e:
-            st.error(f"오류오류오류오류아이고찬후한테빨리전화를걸든지말을하던지하세욥ㅂ: {e}")
+            st.error(f"엔진 오류 발생: {e}")
