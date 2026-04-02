@@ -117,74 +117,74 @@ if st.button("워드클라우드 생성하기!"):
     else:
         try:
             content = ""
-            with st.spinner("자료를 가져오는 중이에요..."):
-                # --- [수정된 데이터 로드 로직] ---
+            mask_arr = None  # 마스크 변수 초기화 (에러 방지)
+
+            with st.spinner("자료를 가져오고 모양을 만드는 중이에요..."):
+                # 1. 데이터 가져오기 로직
                 if source_type == "웹사이트로 생성하기" and url:
-                    headers = {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-                        'Referer': 'https://www.google.com/'
-                    }
+                    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
                     res = requests.get(url, headers=headers, timeout=15)
-                    res.encoding = res.apparent_encoding # 인코딩 감지
+                    res.encoding = res.apparent_encoding
                     soup = BeautifulSoup(res.text, 'html.parser')
-                    
-                    # 불필요한 태그 제거
                     for junk in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'iframe']):
                         junk.decompose()
-                    
-                    # 본문 추정 (가장 긴 텍스트 영역 찾기)
                     potential_bodies = soup.find_all(['article', 'div', 'main', 'section'])
-                    if potential_bodies:
-                        content = max([pb.get_text(separator=' ', strip=True) for pb in potential_bodies], key=len)
-                    else:
-                        content = soup.get_text(separator=' ', strip=True)
-
-                elif source_type == "텍스트 파일 불러오기" and uploaded_file:
+                    content = max([pb.get_text(separator=' ', strip=True) for pb in potential_bodies], key=len) if potential_bodies else soup.get_text()
+                
+                elif source_type == "텍스트 파일 업로드" and uploaded_file:
                     raw_bytes = uploaded_file.read()
-                    # 인코딩 대응
                     for enc in ['utf-8', 'cp949', 'euc-kr']:
                         try:
                             content = raw_bytes.decode(enc)
                             break
                         except: continue
 
-                # 형태소 분석 전 텍스트 체크
                 if not content or len(content.strip()) < 10:
-                    st.warning("어음.. 뭔가 문제가 생겼어요. 텍스트 파일을 확인하거나 주소가 잘못되지는 않았는지 다시 확인해보세요!")
+                    st.warning("분석할 텍스트가 부족합니다!")
                     st.stop()
 
-                # 형태소 분석
+                # 2. 모양(마스크) 결정 로직
+                if shape_option == "직접 글자 입력":
+                    # 글자 수에 맞춰 캔버스 너비 조절
+                    width = 400 + (len(user_shape) * 200)
+                    mask_img = Image.new("RGB", (width, 600), (255, 255, 255))
+                    draw = ImageDraw.Draw(mask_img)
+                    font = ImageFont.truetype(font_path, 400)
+                    w, h = draw.textbbox((0, 0), user_shape, font=font)[2:]
+                    draw.text(((width-w)/2, (600-h)/2), user_shape, fill=(0, 0, 0), font=font)
+                    mask_arr = np.array(mask_img)
+                
+                elif shape_option == "이미지 파일 업로드" and mask_file:
+                    mask_img = Image.open(mask_file).convert('L')
+                    mask_arr = np.array(mask_img)
+                    mask_arr = np.where(mask_arr > 128, 255, 0).astype(np.uint8)
+                
+                elif shape_option == "기본 도형":
+                    mask_arr = create_mask(selected_shape)
+
+                # 3. 단어 분석
                 okt = Okt()
                 nouns = [n for n in okt.nouns(content) if len(n) > 1]
-                if not nouns:
-                    st.warning("분석할 수 있는 단어가 없어요!")
-                    st.stop()
-
                 counts = Counter(nouns)
-                mask_arr = create_mask(selected_shape)
 
-                # 워드클라우드 생성
-                # 워드클라우드 생성 부분 수정
+                # 4. 워드클라우드 생성 (여백 최소화 설정)
                 wc = WordCloud(
                     font_path=font_path,
-                    background_color="white",
-                    width=1000, 
-                    height=1000,
+                    background_color="#1a1c23", # 어두운 배경 (파란 글씨가 잘 보임)
+                    width=mask_arr.shape[1] if mask_arr is not None else 1000,
+                    height=mask_arr.shape[0] if mask_arr is not None else 1000,
                     max_words=max_words,
                     mask=mask_arr,
                     color_func=rainbow_color_func,
-                    
-                    # --- [여백 줄이기 필살기 설정] ---
-                    margin=0,               # 단어 사이의 기본 테두리 여백을 0으로 설정
-                    prefer_horizontal=0.9,   # 단어를 가로로만 배치할지 결정 (1에 가까울수록 가로 위주, 빈틈 채우기 유리)
-                    relative_scaling=0.5,    # 0이면 순위 위주, 1이면 빈도 비례. 0.5 정도가 빈틈 없이 채우기 가장 좋음
-                    min_font_size=10,        # 너무 작은 단어도 포함시켜서 빈 공간(구석)을 메우도록 유도
-                    # -------------------------------
-                    
+                    margin=0,               # 여백 0
+                    prefer_horizontal=0.9,   # 가로 위주
+                    relative_scaling=0.5,    # 빈틈 채우기 최적화
+                    min_font_size=5,         # 작은 글자로 빈틈 메우기
+                    repeat=True,             # 모양을 꽉 채우기 위해 단어 반복
                     contour_width=0
                 ).generate_from_frequencies(counts)
 
-                # 결과 출력
+                # 5. 결과 출력
                 col1, col2 = st.columns([3, 1])
                 with col1:
                     fig, ax = plt.subplots(figsize=(10, 10))
@@ -197,4 +197,4 @@ if st.button("워드클라우드 생성하기!"):
                         st.write(f"**{i+1}. {word}** ({freq})")
 
         except Exception as e:
-            st.error(f"삐뽀삐뽀삐뽀삐뽀삐뽀삐뽀초비상여러분을실망시켜드리어서죄송합니다도게자박을게요다음날말씀해주시면바로박겟습니다어왜오류가발생했지이거찬후한테말을하던지전화를하던지해주세요제발요제가이런물의를끼쳐드려서죄송합니다아마도다음날이면말끔히고쳐져잇을거에요진짜로요: {e}")
+            st.error(f"오류가 발생했습니다: {e}")
