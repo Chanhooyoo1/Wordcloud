@@ -6,152 +6,96 @@ import matplotlib.pyplot as plt
 from konlpy.tag import Okt
 from collections import Counter
 import os
-import numpy as np
 
-# 1. 페이지 설정
-st.set_page_config(page_title="AI 시각화 시스템", layout="wide")
+# 1. 페이지 설정 및 UI 스타일 (주식 시스템 스타일 부활)
+st.set_page_config(page_title="Premium WordCloud AI", layout="wide")
 
-# 2. [디자인 부활] 주식 시스템 스타일 가이드
 st.markdown("""
     <style>
-    /* 브라우저 폰트 시스템 */
-    html, body, [class*="css"] {
-        font-family: 'Pretendard', 'Malgun Gothic', sans-serif !important;
-    }
-
-    /* 메인 타이틀: 빨강-보라 그라데이션 */
     .main-title {
-        font-size: 42px !important;
-        font-weight: 900;
+        font-size: 42px !important; font-weight: 900;
         background: linear-gradient(135deg, #FF4B4B 0%, #764BA2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        margin-top: -20px;
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        text-align: center; margin-bottom: 10px;
     }
-
-    .sub-title {
-        text-align: center;
-        color: #888;
-        font-size: 18px;
-        letter-spacing: 2px;
-        margin-bottom: 30px;
-        text-transform: uppercase;
-    }
-
-    /* 주식 시스템 스타일의 호버 버튼 */
+    .sub-title { text-align: center; color: #888; margin-bottom: 30px; letter-spacing: 2px; }
     div.stButton > button {
-        width: 100%;
-        border-radius: 15px;
-        background: linear-gradient(135deg, #FF4B4B 0%, #764BA2 100%);
-        color: white !important;
-        font-weight: 700;
-        border: none;
-        padding: 15px;
+        width: 100%; border-radius: 15px;
+        background: linear-gradient(135deg, #FF4B4B, #764BA2);
+        color: white !important; font-weight: 700; border: none; padding: 15px;
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        box-shadow: 0 4px 15px rgba(255, 75, 75, 0.2);
     }
-
     div.stButton > button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 25px rgba(255, 75, 75, 0.4);
-        background: linear-gradient(135deg, #FF6B6B 0%, #8E5ACD 100%) !important;
-    }
-
-    /* 사이드바 다크 카드 스타일 */
-    section[data-testid="stSidebar"] {
-        background-color: #111;
+        transform: translateY(-3px); box-shadow: 0 10px 25px rgba(255, 75, 75, 0.4);
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 3. [색상 로직] 빈도수별 무지개 컬러 함수
+# 2. [핵심] 무지개 컬러 함수 (높음: 빨강 -> 낮음: 보라)
 def rainbow_color_func(word, font_size, position, orientation, random_state=None, **kwargs):
-    # 폰트 크기가 클수록(빈도가 높을수록) 빨강/주황/노랑 계열
-    # 폰트 크기가 작을수록(빈도가 낮을수록) 파랑/남색/보라 계열
-    if font_size > 70: # 매우 높음: 빨강
-        return "hsl(0, 100%, 50%)"
-    elif font_size > 50: # 높음: 주황~노랑
-        return f"hsl({np.random.randint(30, 60)}, 100%, 50%)"
-    elif font_size > 30: # 중간: 초록~연두
-        return f"hsl({np.random.randint(80, 140)}, 100%, 50%)"
-    else: # 낮음: 파랑~보라
-        return f"hsl({np.random.randint(200, 280)}, 100%, 50%)"
+    # font_size는 빈도에 비례함 (최대 100~ 최소 10 가정)
+    if font_size > 80: return "rgb(255, 0, 0)"      # 빨강 (최고)
+    elif font_size > 65: return "rgb(255, 127, 0)" # 주황
+    elif font_size > 50: return "rgb(255, 212, 0)" # 노랑
+    elif font_size > 35: return "rgb(0, 255, 0)"   # 초록
+    elif font_size > 25: return "rgb(0, 0, 255)"   # 파랑
+    elif font_size > 15: return "rgb(0, 0, 128)"   # 남색
+    else: return "rgb(139, 0, 255)"                # 보라 (최저)
 
-# 4. 타이틀 렌더링
-st.markdown('<div class="main-title">REAL-TIME WORD INTELLIGENCE</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">𝖵𝗂𝗌𝗎𝖺𝗅𝗂𝗓𝖺𝗍𝗂𝗈𝗇 & 𝖪𝖾𝗒𝗐𝗈𝗋𝖽 𝖤𝗇𝗀𝗂𝗇𝖾</div>', unsafe_allow_html=True)
+# 3. 타이틀 렌더링
+st.markdown('<div class="main-title">RAINBOW WORD INTELLIGENCE</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">𝖥𝗋𝖾𝗊𝗎𝖾𝗇𝖼𝗒-𝖡𝖺𝗌𝖾𝖽 𝖢𝗈𝗅𝗈𝗋 𝖲𝗉𝖾𝖼𝗍𝗋𝗎𝗆</div>', unsafe_allow_html=True)
 
-# 5. 사이드바 설정
+# 4. 분석 설정
 with st.sidebar:
-    st.header("⚙️ 분석 제어")
-    mode = st.radio("데이터 소스", ["URL 분석", "파일 업로드"])
-    
-    source = ""
-    if mode == "URL 분석":
-        source = st.text_input("URL 주소", "https://n.news.naver.com/article/001/0014567890")
-    else:
-        uploaded_file = st.file_uploader("텍스트 파일", type=['txt'])
+    st.header("⚙️ 엔진 설정")
+    url = st.text_input("URL 입력", "https://n.news.naver.com/article/001/0014567890")
+    max_words = st.slider("단어 수", 50, 300, 100)
 
-    st.divider()
-    max_words = st.slider("최대 단어 수", 50, 300, 100)
-    stop_words_raw = st.text_area("제외 단어", "기자, 뉴스, 배포, 금지")
-    stop_words = [x.strip() for x in stop_words_raw.split(",")]
-
-# 6. 실행 및 시괄화
-if st.button("🚀 데이터 엔진 가동"):
+# 5. 실행 로직
+if st.button("🚀 무지개 분석 시작"):
     try:
-        with st.spinner("언어 모델 분석 중..."):
-            # 데이터 로딩
-            if mode == "URL 분석":
-                res = requests.get(source, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
-                res.encoding = 'utf-8'
-                soup = BeautifulSoup(res.text, 'html.parser')
-                for s in soup(["script", "style"]): s.extract()
-                raw_text = soup.get_text()
-            else:
-                if uploaded_file:
-                    raw_text = uploaded_file.read().decode('utf-8')
-                else:
-                    st.warning("파일을 올려주세요."); st.stop()
+        with st.spinner("데이터 수집 및 언어 분석 중..."):
+            res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+            res.encoding = 'utf-8'
+            soup = BeautifulSoup(res.text, 'html.parser')
+            text = soup.get_text()
 
-            # 명사 추출 및 빈도 계산
             okt = Okt()
-            nouns = [n for n in okt.nouns(raw_text) if len(n) > 1 and n not in stop_words]
+            nouns = [n for n in okt.nouns(text) if len(n) > 1]
             counts = Counter(nouns)
 
         if counts:
-            # 폰트 경로 자동 탐색 (네모 방지)
+            # --- [폰트 해결 필살기] ---
+            # 1. 윈도우 기본 경로 확인
             font_path = "C:/Windows/Fonts/malgun.ttf"
-            if not os.path.exists(font_path):
-                font_path = "/usr/share/fonts/truetype/nanum/NanumGothic.ttf" # 리눅스 서버용
             
-            # 워드클라우드 생성 (무지개 컬러 함수 적용)
+            # 2. 만약 서버(리눅스)라면 나눔고딕 확인
+            if not os.path.exists(font_path):
+                font_path = "/usr/share/fonts/truetype/nanum/NanumGothic.ttf"
+            
+            # 3. 여전히 없다면? 현재 폴더에 malgun.ttf가 있는지 확인
+            if not os.path.exists(font_path):
+                font_path = "malgun.ttf" 
+
+            # 워드클라우드 생성
             wc = WordCloud(
                 font_path=font_path if os.path.exists(font_path) else None,
                 background_color="white",
-                width=1200, height=700,
+                width=1000, height=600,
                 max_words=max_words,
-                color_func=rainbow_color_func, # 커스텀 무지개 색상 로직 적용!
+                color_func=rainbow_color_func, # 무지개 함수 적용
                 random_state=42
             ).generate_from_frequencies(counts)
 
-            # 결과 출력
-            c1, c2 = st.columns([3, 1])
-            with c1:
-                st.subheader("📊 키워드 분포 (무지개 필터)")
-                fig, ax = plt.subplots(figsize=(12, 7))
-                ax.imshow(wc, interpolation='bilinear')
-                ax.axis('off')
-                st.pyplot(fig)
+            # 결과 시각화
+            fig, ax = plt.subplots(figsize=(12, 7))
+            ax.imshow(wc, interpolation='bilinear')
+            ax.axis('off')
+            st.pyplot(fig)
             
-            with c2:
-                st.subheader("🔝 TOP 10")
-                for i, (word, freq) in enumerate(counts.most_common(10)):
-                    st.markdown(f"**{i+1}. {word}** : {freq}회")
-        else:
-            st.error("데이터가 부족합니다.")
-
+            if not os.path.exists(font_path):
+                st.error("⚠️ 서버에 한글 폰트 파일이 없습니다!")
+                st.info("파일 깨짐 해결법: 내 컴퓨터의 'malgun.ttf' 파일을 복사해서 이 파이썬 파일(.py)과 똑같은 폴더에 넣어주세요.")
     except Exception as e:
-        st.error(f"엔진 오류: {e}")
-        st.info("Tip: 한글 폰트가 없는 환경이면 글자가 깨질 수 있습니다.")
+        st.error(f"오류: {e}")
