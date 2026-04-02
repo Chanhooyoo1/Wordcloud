@@ -85,7 +85,7 @@ with st.sidebar:
 
 # 5. 분석 엔진 가동
 if st.button("🚀 무지개 분석 엔진 가동"):
-    font_path = "NanumGothic.ttf"
+    font_path = "SeoulAlrimTTF-Bold.ttf"
     if not os.path.exists(font_path):
         st.error("⚠️ 폴더에 'NanumGothic.ttf' 파일이 필요합니다!")
     else:
