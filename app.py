@@ -54,16 +54,31 @@ def create_mask(shape_type):
     else: return None
     return np.array(mask)
 
-# 3. 빈도 기반 컬러 함수
+# 3. 빈도 기반 컬러 함수 (큰 단어 = 파란색 계열)
 def rainbow_color_func(word, font_size, position, orientation, random_state=None, **kwargs):
-    if font_size > 100: return "rgb(255, 75, 88)"
-    elif font_size > 90: return "rgb(255, 75, 88)"
-    elif font_size > 60: return "rgb(255, 151, 104)"
-    elif font_size > 45: return "rgb(200, 238, 144)"
-    elif font_size > 30: return "rgb(20, 250, 255)"
-    elif font_size > 25: return "rgb(128, 0, 128)"
-    elif font_size > 20: return "rgb(148, 0, 211)"
-    else: return "rgb(148, 0, 211)"
+    # 1. 가장 큰 핵심 단어 (이미지의 '가상현실' 스타일 - 파랑/청록)
+    if font_size > 90: 
+        return "rgb(20, 200, 255)"      # 밝은 하늘색 (Cyan)
+    
+    # 2. 두 번째로 큰 단어 (진한 파랑/남색)
+    elif font_size > 70: 
+        return "rgb(30, 80, 255)"       # 선명한 파란색 (Blue)
+    
+    # 3. 중간 크기 단어 (보라/자주)
+    elif font_size > 50: 
+        return "rgb(160, 50, 255)"      # 보라색 (Purple)
+    
+    # 4. 중간 이하 단어 (연두/초록)
+    elif font_size > 35: 
+        return "rgb(150, 230, 50)"      # 밝은 연두색 (Lime)
+    
+    # 5. 작은 단어 (주황/노랑)
+    elif font_size > 20: 
+        return "rgb(255, 150, 0)"       # 주황색 (Orange)
+    
+    # 6. 가장 작은 보조 단어 (빨강/핑크)
+    else: 
+        return "rgb(255, 75, 88)"       # 부드러운 빨강 (Soft Red)
 
 # 4. 사이드바 구성
 st.markdown('<div class="main-title">워드클라우드 생성기</div>', unsafe_allow_html=True)
