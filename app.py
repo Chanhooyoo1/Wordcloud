@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from konlpy.tag import Okt
 from collections import Counter
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont  # 여기에 ImageFont가 있어야 '직접 글자 입력'이 작동해요!
 import os
 
 # 1. 스타일 설정
