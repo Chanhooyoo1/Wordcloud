@@ -119,7 +119,7 @@ if st.button("워드클라우드 생성하기!"):
             content = ""
             mask_arr = None  # 마스크 변수 초기화 (에러 방지)
 
-            with st.spinner("자료를 가져오고 모양을 만드는 중이에요..."):
+            with st.spinner("생성 중이예요..."):
                 # 1. 데이터 가져오기 로직
                 if source_type == "웹사이트로 생성하기" and url:
                     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
@@ -140,7 +140,7 @@ if st.button("워드클라우드 생성하기!"):
                         except: continue
 
                 if not content or len(content.strip()) < 10:
-                    st.warning("분석할 텍스트가 부족합니다!")
+                    st.warning("분석할 단어가 부족해요.")
                     st.stop()
 
                 # 2. 모양(마스크) 결정 로직
@@ -197,4 +197,4 @@ if st.button("워드클라우드 생성하기!"):
                         st.write(f"**{i+1}. {word}** ({freq})")
 
         except Exception as e:
-            st.error(f"오류가 발생했습니다: {e}")
+            st.error(f"삐뽀삐뽀삐뽀삐뽀삐뽀삐뽀초비상여러분을실망시켜드리어서죄송합니다도게자박을게요다음날말씀해주시면바로박겟습니다어왜오류가발생했지이거찬후한테말을하던지전화를하던지해주세요제발요제가이런물의를끼쳐드려서죄송합니다아마도다음날이면말끔히고쳐져잇을거에요진짜로요: {e}")
